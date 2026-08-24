@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "required": ["pass", "reason"],
+  "properties": {
+    "pass": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
