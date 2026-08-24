@@ -84,14 +84,83 @@ printf 'debug output\n' >&2
 	}
 }
 
+func TestClaudeRunnerLowersStructuredRequestAndUnwrapsOutput(t *testing.T) {
+	argsFile := filepath.Join(t.TempDir(), "args")
+	cwdFile := filepath.Join(t.TempDir(), "cwd")
+	t.Setenv("SEMX_ARGS_FILE", argsFile)
+	t.Setenv("SEMX_CWD_FILE", cwdFile)
+	script := executable(t, `#!/bin/sh
+pwd > "$SEMX_CWD_FILE"
+printf '%s\n' "$@" > "$SEMX_ARGS_FILE"
+printf '{"structured_output":{"pass":true,"reason":"factual"},"result":""}\n'
+`)
+	corpus := t.TempDir()
+	schema := filepath.Join(t.TempDir(), "schema.json")
+	schemaData := `{"type":"object","required":["pass","reason"],"properties":{"pass":{"type":"boolean"},"reason":{"type":"string"}}}`
+	if err := os.WriteFile(schema, []byte(schemaData), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	backend, err := New(config.RunnerConfig{
+		Type:    "claude",
+		Command: script,
+		Args:    map[string]any{"model": "sonnet", "safe-mode": true},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	req := request.RunRequest{
+		Corpus: request.Corpus{Path: corpus},
+		Prompt: request.Prompt{System: "judge", User: "is it factual?"},
+		Output: request.OutputContract{Format: "json", Schema: schema},
+	}
+	result, err := backend.Run(context.Background(), req)
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if result.Output != `{"pass":true,"reason":"factual"}` {
+		t.Fatalf("Output = %q", result.Output)
+	}
+	if !strings.Contains(result.Stdout, `"structured_output"`) {
+		t.Fatalf("Stdout = %q", result.Stdout)
+	}
+	data, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(data)
+	for _, want := range []string{
+		"--model\nsonnet\n",
+		"--safe-mode\n",
+		"--permission-mode\ndontAsk\n",
+		"--print\n",
+		"--no-session-persistence\n",
+		"--output-format\njson\n",
+		"--json-schema\n",
+		`"required"`,
+		corpus,
+		"is it factual?",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("argv = %q, missing %q", got, want)
+		}
+	}
+	cwd, err := os.ReadFile(cwdFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(string(cwd)) != corpus {
+		t.Fatalf("working directory = %q, want %q", cwd, corpus)
+	}
+}
+
 func TestGenericCommandRunnerDoesNotUseCodexExec(t *testing.T) {
 	argsFile := filepath.Join(t.TempDir(), "args")
 	t.Setenv("SEMX_ARGS_FILE", argsFile)
 	script := executable(t, "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$SEMX_ARGS_FILE\"\n")
 	backend, err := New(config.RunnerConfig{
-		Type:    "claude",
+		Type:    "opencode",
 		Command: script,
-		Args:    map[string]any{"model": "opus"},
+		Args:    map[string]any{"model": "test"},
 	})
 	if err != nil {
 		t.Fatal(err)

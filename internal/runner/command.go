@@ -28,9 +28,14 @@ func (r *CommandRunner) Run(ctx context.Context, req request.RunRequest) (RunRes
 }
 
 func runCommand(ctx context.Context, command string, args []string) (RunResult, error) {
+	return runCommandInDir(ctx, command, args, "")
+}
+
+func runCommandInDir(ctx context.Context, command string, args []string, dir string) (RunResult, error) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd := exec.CommandContext(ctx, command, args...)
+	cmd.Dir = dir
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
