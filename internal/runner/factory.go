@@ -8,7 +8,9 @@ import (
 
 func New(cfg config.RunnerConfig) (Runner, error) {
 	switch cfg.Type {
-	case "codex", "claude", "opencode", "pi":
+	case "codex":
+		return &CodexRunner{cfg: cfg}, nil
+	case "claude", "opencode", "pi":
 		return &CommandRunner{cfg: cfg}, nil
 	default:
 		return nil, fmt.Errorf("unsupported runner type %q", cfg.Type)

@@ -69,6 +69,7 @@ func TestApplyOverridesUsesReflectedFieldsAndAliases(t *testing.T) {
 		"--out=/alias-output",
 		"--runner.args.model=opus",
 		"--runner.args.permission-mode", "bypassPermissions",
+		"--runner.args.ignore-user-config=true",
 	}
 	if err := ApplyOverrides(&cfg, args); err != nil {
 		t.Fatalf("ApplyOverrides() error = %v", err)
@@ -87,6 +88,9 @@ func TestApplyOverridesUsesReflectedFieldsAndAliases(t *testing.T) {
 	}
 	if cfg.Runner.Args["model"] != "opus" || cfg.Runner.Args["permission-mode"] != "bypassPermissions" {
 		t.Fatalf("Runner.Args = %#v", cfg.Runner.Args)
+	}
+	if cfg.Runner.Args["ignore-user-config"] != true {
+		t.Fatalf("Runner.Args = %#v, want typed boolean", cfg.Runner.Args)
 	}
 }
 

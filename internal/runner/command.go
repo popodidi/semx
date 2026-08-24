@@ -24,13 +24,16 @@ func (r *CommandRunner) Run(ctx context.Context, req request.RunRequest) (RunRes
 		return RunResult{}, err
 	}
 	args = append(args, BuildPrompt(req))
+	return runCommand(ctx, command, args)
+}
 
+func runCommand(ctx context.Context, command string, args []string) (RunResult, error) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	err = cmd.Run()
+	err := cmd.Run()
 	result := RunResult{
 		Output: stdout.String(),
 		Stdout: stdout.String(),

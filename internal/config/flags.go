@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"go.yaml.in/yaml/v3"
 )
 
 var aliases = map[string]string{
@@ -35,7 +37,11 @@ func ApplyOverrides(cfg *Config, args []string) error {
 			if key == "" {
 				return errors.New("runner argument name is required")
 			}
-			cfg.Runner.Args[key] = value
+			parsed, err := parseRunnerArgValue(value)
+			if err != nil {
+				return fmt.Errorf("invalid value for --%s: %w", name, err)
+			}
+			cfg.Runner.Args[key] = parsed
 			continue
 		}
 		field, ok := fields[name]
@@ -45,6 +51,14 @@ func ApplyOverrides(cfg *Config, args []string) error {
 		field.SetString(value)
 	}
 	return nil
+}
+
+func parseRunnerArgValue(value string) (any, error) {
+	var parsed any
+	if err := yaml.Unmarshal([]byte(value), &parsed); err != nil {
+		return nil, err
+	}
+	return parsed, nil
 }
 
 func reflectedStringFields(value reflect.Value, prefix string) map[string]reflect.Value {

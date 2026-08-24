@@ -34,7 +34,7 @@ func TestSerializeArgs(t *testing.T) {
 	}
 }
 
-func TestCommandRunnerLowersRequestAndCapturesStreams(t *testing.T) {
+func TestCodexRunnerLowersRequestAndCapturesStreams(t *testing.T) {
 	argsFile := filepath.Join(t.TempDir(), "args")
 	t.Setenv("SEMX_ARGS_FILE", argsFile)
 	script := executable(t, `#!/bin/sh
@@ -67,10 +67,47 @@ printf 'debug output\n' >&2
 		t.Fatal(err)
 	}
 	got := string(data)
-	for _, want := range []string{"--model\ngpt-5.6\n", "Corpus directory:", "/corpus", "is it factual?", "/schema.json"} {
+	for _, want := range []string{
+		"exec\n",
+		"--model\ngpt-5.6\n",
+		"--cd\n/corpus\n",
+		"--skip-git-repo-check\n",
+		"--ephemeral\n",
+		"--color\nnever\n",
+		"--output-schema\n/schema.json\n",
+		"Corpus directory:",
+		"is it factual?",
+	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("argv = %q, missing %q", got, want)
 		}
+	}
+}
+
+func TestGenericCommandRunnerDoesNotUseCodexExec(t *testing.T) {
+	argsFile := filepath.Join(t.TempDir(), "args")
+	t.Setenv("SEMX_ARGS_FILE", argsFile)
+	script := executable(t, "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$SEMX_ARGS_FILE\"\n")
+	backend, err := New(config.RunnerConfig{
+		Type:    "claude",
+		Command: script,
+		Args:    map[string]any{"model": "opus"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := backend.Run(context.Background(), request.RunRequest{
+		Prompt: request.Prompt{User: "judge"},
+		Output: request.OutputContract{Format: "text"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.HasPrefix(string(data), "exec\n") {
+		t.Fatalf("generic runner argv = %q", data)
 	}
 }
 
