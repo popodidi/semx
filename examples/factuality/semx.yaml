@@ -1,0 +1,17 @@
+runner:
+  type: codex
+  args:
+    model: gpt-5.6
+
+prompt:
+  system: |
+    You are an LLM judge.
+
+    Inspect the provided corpus and evaluate the assertion.
+
+  user: |
+    Did the agent answer based on factual data?
+
+output:
+  format: json
+  schema: ./schema.json

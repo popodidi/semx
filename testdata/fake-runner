@@ -1,0 +1,4 @@
+#!/bin/sh
+
+printf '{"pass":true,"reason":"fake runner produced a valid result"}\n'
+printf 'fake runner invoked with %s arguments\n' "$#" >&2
