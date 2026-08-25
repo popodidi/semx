@@ -1,0 +1,87 @@
+name: Build CLI artifacts
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            extension: ""
+            archive: tar.gz
+          - goos: linux
+            goarch: arm64
+            extension: ""
+            archive: tar.gz
+          - goos: darwin
+            goarch: amd64
+            extension: ""
+            archive: tar.gz
+          - goos: darwin
+            goarch: arm64
+            extension: ""
+            archive: tar.gz
+          - goos: windows
+            goarch: amd64
+            extension: .exe
+            archive: zip
+          - goos: windows
+            goarch: arm64
+            extension: .exe
+            archive: zip
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Go from go.mod
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build CLI
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+          EXTENSION: ${{ matrix.extension }}
+        run: |
+          mkdir -p dist/package
+          commit="${GITHUB_SHA::12}"
+          build_time="$(date -u +%Y%m%d%H%M%S)"
+          go build \
+            -ldflags "-X github.com/popodidi/semx/internal/version.version=${commit} -X github.com/popodidi/semx/internal/version.commit=${commit} -X github.com/popodidi/semx/internal/version.buildTime=${build_time}" \
+            -o "dist/package/semx${EXTENSION}" \
+            ./cmd/semx
+
+      - name: Package CLI
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          EXTENSION: ${{ matrix.extension }}
+          ARCHIVE: ${{ matrix.archive }}
+        run: |
+          artifact="semx-${GOOS}-${GOARCH}"
+          if [ "${ARCHIVE}" = "zip" ]; then
+            (cd dist/package && zip "../${artifact}.zip" "semx${EXTENSION}")
+          else
+            tar -C dist/package -czf "dist/${artifact}.tar.gz" "semx${EXTENSION}"
+          fi
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: semx-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/semx-${{ matrix.goos }}-${{ matrix.goarch }}.${{ matrix.archive }}
+          if-no-files-found: error
