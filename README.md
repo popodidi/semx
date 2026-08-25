@@ -12,6 +12,20 @@ make build
 
 The binary is written to `bin/semx`.
 
+## Download the latest main build
+
+The [`main-latest` prerelease](https://github.com/popodidi/semx/releases/tag/main-latest) contains CLI builds for Linux, macOS, and Windows on amd64 and arm64:
+
+- [Linux amd64](https://github.com/popodidi/semx/releases/download/main-latest/semx-linux-amd64.tar.gz)
+- [Linux arm64](https://github.com/popodidi/semx/releases/download/main-latest/semx-linux-arm64.tar.gz)
+- [macOS amd64](https://github.com/popodidi/semx/releases/download/main-latest/semx-darwin-amd64.tar.gz)
+- [macOS arm64](https://github.com/popodidi/semx/releases/download/main-latest/semx-darwin-arm64.tar.gz)
+- [Windows amd64](https://github.com/popodidi/semx/releases/download/main-latest/semx-windows-amd64.zip)
+- [Windows arm64](https://github.com/popodidi/semx/releases/download/main-latest/semx-windows-arm64.zip)
+- [SHA-256 checksums](https://github.com/popodidi/semx/releases/download/main-latest/SHA256SUMS)
+
+This is a mutable prerelease. Its assets are replaced after every successful build of `main`; the release notes identify the exact commit.
+
 ## Validate a configuration
 
 ```bash

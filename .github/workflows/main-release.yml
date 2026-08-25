@@ -1,0 +1,90 @@
+name: Build main release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: main-release
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Go from go.mod
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Build release archives
+        run: ./scripts/build_release.sh dist "$GITHUB_SHA"
+
+      - name: Verify release archives
+        run: cd dist && sha256sum -c SHA256SUMS
+
+      - name: Publish rolling main prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: main-latest
+        run: |
+          set -euo pipefail
+
+          short_sha="${GITHUB_SHA::12}"
+          notes="$(printf 'Automated prerelease for the latest successful `main` build.\n\nCommit: [`%s`](https://github.com/%s/commit/%s)\n\nThese assets are mutable and are replaced after every successful `main` build.' "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_SHA")"
+
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release delete "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+          elif git ls-remote --exit-code --tags origin "refs/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            git push origin ":refs/tags/${RELEASE_TAG}"
+          fi
+
+          gh release create "$RELEASE_TAG" \
+            dist/SHA256SUMS \
+            dist/semx-darwin-amd64.tar.gz \
+            dist/semx-darwin-arm64.tar.gz \
+            dist/semx-linux-amd64.tar.gz \
+            dist/semx-linux-arm64.tar.gz \
+            dist/semx-windows-amd64.zip \
+            dist/semx-windows-arm64.zip \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Main build ${short_sha}" \
+            --notes "$notes" \
+            --prerelease \
+            --latest=false
+
+      - name: Verify rolling main prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: main-latest
+        run: |
+          set -euo pipefail
+
+          release_endpoint="repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}"
+          test "$(gh api "$release_endpoint" --jq '.prerelease')" = "true"
+          test "$(gh api "$release_endpoint" --jq '.draft')" = "false"
+          test "$(gh api "$release_endpoint" --jq '.assets | length')" -eq 7
+          test "$(gh api "$release_endpoint" --jq '[.assets[] | select(.size == 0)] | length')" -eq 0
+
+          expected_assets="$(printf '%s\n' \
+            SHA256SUMS \
+            semx-darwin-amd64.tar.gz \
+            semx-darwin-arm64.tar.gz \
+            semx-linux-amd64.tar.gz \
+            semx-linux-arm64.tar.gz \
+            semx-windows-amd64.zip \
+            semx-windows-arm64.zip | sort)"
+          actual_assets="$(gh api "$release_endpoint" --jq '.assets[].name' | sort)"
+          test "$actual_assets" = "$expected_assets"
+
+          tag_sha="$(git ls-remote origin "refs/tags/${RELEASE_TAG}" | cut -f1)"
+          test "$tag_sha" = "$GITHUB_SHA"
