@@ -12,7 +12,9 @@ func New(cfg config.RunnerConfig) (Runner, error) {
 		return &CodexRunner{cfg: cfg}, nil
 	case "claude":
 		return &ClaudeRunner{cfg: cfg}, nil
-	case "opencode", "pi":
+	case "opencode":
+		return &OpenCodeRunner{cfg: cfg}, nil
+	case "pi":
 		return &CommandRunner{cfg: cfg}, nil
 	default:
 		return nil, fmt.Errorf("unsupported runner type %q", cfg.Type)
