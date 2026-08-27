@@ -17,7 +17,6 @@ var runnerTypes = map[string]struct{}{
 	"claude":   {},
 	"codex":    {},
 	"opencode": {},
-	"pi":       {},
 }
 
 func ValidateConfig(cfg Config) []error {

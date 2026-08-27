@@ -153,34 +153,77 @@ printf '{"structured_output":{"pass":true,"reason":"factual"},"result":""}\n'
 	}
 }
 
-func TestGenericCommandRunnerDoesNotUseCodexExec(t *testing.T) {
+func TestOpenCodeRunnerLowersRequestAndExtractsTextEvents(t *testing.T) {
 	argsFile := filepath.Join(t.TempDir(), "args")
 	t.Setenv("SEMX_ARGS_FILE", argsFile)
-	script := executable(t, "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$SEMX_ARGS_FILE\"\n")
+	script := executable(t, `#!/bin/sh
+printf '%s\n' "$@" > "$SEMX_ARGS_FILE"
+printf '%s\n' \
+  '{"type":"step_start","part":{"type":"step-start"}}' \
+  '{"type":"text","part":{"type":"text","text":"result "}}' \
+  '{"type":"text","part":{"type":"text","text":"output\n"}}' \
+  '{"type":"step_finish","part":{"type":"step-finish","reason":"stop"}}'
+printf 'debug output\n' >&2
+`)
+	corpus := t.TempDir()
 	backend, err := New(config.RunnerConfig{
 		Type:    "opencode",
 		Command: script,
-		Args:    map[string]any{"model": "test"},
+		Args:    map[string]any{"model": "ollama/test"},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := backend.Run(context.Background(), request.RunRequest{
-		Prompt: request.Prompt{User: "judge"},
+	result, err := backend.Run(context.Background(), request.RunRequest{
+		Corpus: request.Corpus{Path: corpus},
+		Prompt: request.Prompt{User: "judge this"},
 		Output: request.OutputContract{Format: "text"},
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatal(err)
+	}
+	if result.Output != "result output\n" || !strings.Contains(result.Stdout, `"step_start"`) || result.Stderr != "debug output\n" {
+		t.Fatalf("Run() result = %#v", result)
 	}
 	data, err := os.ReadFile(argsFile)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.HasPrefix(string(data), "exec\n") {
-		t.Fatalf("generic runner argv = %q", data)
+	got := string(data)
+	for _, want := range []string{
+		"run\n",
+		"--model\nollama/test\n",
+		"--format\njson\n",
+		"--dir\n" + corpus + "\n",
+		"Corpus directory:\n",
+		corpus,
+		"judge this",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("argv = %q, missing %q", got, want)
+		}
 	}
 }
 
-func TestCommandRunnerSurfacesChildFailure(t *testing.T) {
+func TestOpenCodeRunnerRejectsMissingTextResponse(t *testing.T) {
+	script := executable(t, "#!/bin/sh\nprintf '%s\\n' '{\"type\":\"step_finish\",\"part\":{\"type\":\"step-finish\",\"reason\":\"stop\"}}'\n")
+	backend, err := New(config.RunnerConfig{Type: "opencode", Command: script, Args: map[string]any{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = backend.Run(context.Background(), request.RunRequest{Corpus: request.Corpus{Path: t.TempDir()}})
+	if err == nil || !strings.Contains(err.Error(), "did not include a text response") {
+		t.Fatalf("Run() error = %v", err)
+	}
+}
+
+func TestNewRejectsUnsupportedPiRunner(t *testing.T) {
+	if _, err := New(config.RunnerConfig{Type: "pi", Args: map[string]any{}}); err == nil || !strings.Contains(err.Error(), `unsupported runner type "pi"`) {
+		t.Fatalf("New() error = %v", err)
+	}
+}
+
+func TestCodexRunnerSurfacesChildFailure(t *testing.T) {
 	script := executable(t, "#!/bin/sh\nprintf 'failure details\\n' >&2\nexit 7\n")
 	backend, err := New(config.RunnerConfig{Type: "codex", Command: script, Args: map[string]any{}})
 	if err != nil {
