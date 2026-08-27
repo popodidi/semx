@@ -217,7 +217,13 @@ func TestOpenCodeRunnerRejectsMissingTextResponse(t *testing.T) {
 	}
 }
 
-func TestCommandRunnerSurfacesChildFailure(t *testing.T) {
+func TestNewRejectsUnsupportedPiRunner(t *testing.T) {
+	if _, err := New(config.RunnerConfig{Type: "pi", Args: map[string]any{}}); err == nil || !strings.Contains(err.Error(), `unsupported runner type "pi"`) {
+		t.Fatalf("New() error = %v", err)
+	}
+}
+
+func TestCodexRunnerSurfacesChildFailure(t *testing.T) {
 	script := executable(t, "#!/bin/sh\nprintf 'failure details\\n' >&2\nexit 7\n")
 	backend, err := New(config.RunnerConfig{Type: "codex", Command: script, Args: map[string]any{}})
 	if err != nil {

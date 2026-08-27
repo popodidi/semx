@@ -2,7 +2,7 @@
 
 Semx is a semantic executor for assertions powered by coding agents: `assert()` for things that need an agent.
 
-Semx owns the portable evaluation request—corpus, prompt, output contract, validation, and run artifacts. Pluggable runners lower that request into Codex, Claude Code, OpenCode, or Pi command invocations.
+Semx owns the portable evaluation request—corpus, prompt, output contract, validation, and run artifacts. Pluggable runners lower that request into Codex, Claude Code, or OpenCode command invocations.
 
 ## Build
 

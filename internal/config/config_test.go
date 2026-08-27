@@ -139,6 +139,7 @@ func TestValidation(t *testing.T) {
 	}{
 		{"missing runner", func(c *Config) { c.Runner.Type = "" }, "runner.type is required"},
 		{"invalid runner", func(c *Config) { c.Runner.Type = "other" }, "runner.type must be one of"},
+		{"unsupported pi runner", func(c *Config) { c.Runner.Type = "pi" }, "runner.type must be one of: claude, codex, opencode"},
 		{"missing prompt", func(c *Config) { c.Prompt.User = "" }, "prompt.user is required"},
 		{"invalid format", func(c *Config) { c.Output.Format = "yaml" }, "output.format must be one of"},
 		{"json without schema", func(c *Config) { c.Output.Schema = "" }, "output.schema is required"},

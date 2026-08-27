@@ -5,27 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-
-	"github.com/popodidi/semx/internal/config"
-	"github.com/popodidi/semx/internal/request"
 )
-
-type CommandRunner struct {
-	cfg config.RunnerConfig
-}
-
-func (r *CommandRunner) Run(ctx context.Context, req request.RunRequest) (RunResult, error) {
-	command := r.cfg.Command
-	if command == "" {
-		command = r.cfg.Type
-	}
-	args, err := SerializeArgs(r.cfg.Args)
-	if err != nil {
-		return RunResult{}, err
-	}
-	args = append(args, BuildPrompt(req))
-	return runCommand(ctx, command, args)
-}
 
 func runCommand(ctx context.Context, command string, args []string) (RunResult, error) {
 	return runCommandInDir(ctx, command, args, "")
