@@ -7,3 +7,12 @@ coverage.out
 .env.*
 tmp/
 .DS_Store
+
+_repo/
+contexts/*
+!contexts/.gitkeep
+__pycache__/
+*.pyc
+*.secrets.yaml
+*.secrets.json
+.hlab_ctr_pull.env

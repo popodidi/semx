@@ -1,0 +1,34 @@
+{
+  "date": "20261002",
+  "sources": [
+    {
+      "repo": "popodidi/harvis",
+      "commit": "25aefa89eebc787d89d483839f0b17790c9acf11"
+    },
+    {
+      "repo": "popodidi/semx",
+      "commit": "4a5ab3f3366825ae8d4d840808568f4bfe0abc2e"
+    }
+  ],
+  "files": [
+    {
+      "source": "projects/semx/AGENTS.md",
+      "disposition": "merged into root workspace contract"
+    },
+    {
+      "source": "projects/semx/CLAUDE.md",
+      "disposition": "merged into root workspace contract"
+    },
+    {
+      "source": "projects/semx/repo.yaml",
+      "disposition": "merged into root workspace contract"
+    },
+    {
+      "source": "memory/episodes/20260814-semx-project-bootstrap.md",
+      "destination": "memory/episodes/20260814-semx-project-bootstrap.md",
+      "disposition": "copied",
+      "source_sha256": "7384e8fdfe712ef9975f169eacbd58cdde1bcaff86c2f5f314c15635942c8127",
+      "destination_sha256": "7384e8fdfe712ef9975f169eacbd58cdde1bcaff86c2f5f314c15635942c8127"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+version: 1
+source_repo: git@github.com:popodidi/harvis.git
+harvis_commit: db936ba696e0302527176a520a80f4f71e9d83fd
+components:
+  runtime_preset:
+    source: projects/self/bot-shared/runtime-preset.md
+    sha256: e22824c83605ea27ded9b4284b913b12359286cab5d05275198cd0914d69b286
+  skill:codebase:
+    source: projects/self/skills/codebase
+    sha256: df24b29e2f95fc28f5714bcaf058f5b95bd7669a395aa0f5c4393807996ee551
